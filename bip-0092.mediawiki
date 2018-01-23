@@ -1,0 +1,66 @@
+<pre>
+  BIP: 90
+  Layer: Consensus
+  Title: Buried Deployments (P2SH)
+  Author: John Newbery <john@chaincode.com>
+  Comments-Summary: No comments yet
+  Comments-URI: https://github.com/bitcoin/bips/wiki/Comments:BIP-0092
+  Status: Draft
+  Type: Informational
+  Created: 2018-01-22
+  License: PD
+</pre>
+
+
+==Abstract==
+
+BIP 16 was deployed via a hardcoded flag day consensus rule change. Prior to the date of the consensus rule change being fixed, the miners signaled readiness for the change by placing the string "/P2SH/" in the scriptSig of the coinbase transaction txIn. The rule change was originally intended to come into effect on 15 Feb 2012, but due to lack of miner signaling, the activation date was pushed back to April 1st 2012.
+
+Now that the chain has long since passed the blocks at which the P2SH consensus rule was acticated, we can (as a simplification) replace the trigger mechanism by caching the block heights at which those consensus rules became enforced.
+
+==Motivation==
+
+See [https://github.com/bitcoin/bips/blob/master/bip-0034.mediawiki The BIP 16 specification] for details on the BIP 16 deployment method. The final activation method was via a hardcoded block time of 1333238400 (April 1st 2012), which was set based on miner signaling.
+
+Activating this consensus change based on block time has several disadvantages:
+
+* The consensus change can be activated and later deactivated in the same chain (since block time is not necessarily monotonically increasing).
+* The coinbase transaction of every block must be examined to determine whether the consensus rule should be enforced
+* It is less flexible for constructing test chains for testing P2SH and other soft fork activation
+
+This mechanism for code deployments was deprecated in favor of IsSuperMajority deployments (see [https://github.com/bitcoin/bips/blob/master/bip-0034.mediawiki BIP 34] for details), and later by [https://github.com/bitcoin/bips/blob/master/bip-0009.mediawiki BIP 9] deployments.
+
+BIP 34, BIP 65, and BIP 66 deployments were later 'buried' by [https://github.com/bitcoin/bips/blob/master/bip-0090.mediawiki BIP 90] with simple height checks, which were chosen to be the block height triggering the 95% activation rule on mainnet for each of those deployments.  This simplification of the consensus rules reduced the technical debt associated with deployment of those consensus changes.
+
+This BIP changes the BIP 16 activation method to also be a 'buried' deployment, activating at the block height that BIP 16 actually activated. For the mainnet chain, this is block height 173805.
+
+==Considerations==
+
+Just as for the buried BIP 34, BIP 65 and BIP 66 deployments, it is technically possible for this to be a non-backwards compatible change. For example, if an alternate chain were created in which block height 173805 was reached after April 1st 2012, and a block with height < 173805 but block time after April 1st 2012 included an invalid P2SH spend, older software would see that chain as invalid, but newer software implementing this change would not.
+
+However, while newer software and older software might validate old blocks differently, that could only cause a consensus split if there were an extremely large blockchain reorganization onto a chain built off such a block. As of January 2018, BIP 16 has over 300,000 blocks built on top of it.  The occurrence of such a reorg that would cause the activating block to be disconnected would raise fundamental concerns about the security assumptions of Bitcoin, a far bigger issue than any non-backwards compatible change.
+
+==Specification==
+
+The BIP 16 activation height is set to 173805.
+
+To determine whether to enforce BIP 16 on a given block, we just compare the height of the block being validated with the stored activation heights:
+
+    // Start enforcing P2SH (BIP16)
+    if (pindex->nHeight >= consensusparams.BIP16Height) {
+        flags |= SCRIPT_VERIFY_P2SH;
+    }
+
+Please see the implementation for additional details.
+
+==Implementation==
+
+https://github.com/bitcoin/bitcoin/commit/18e071841e83044b47aa45c3e98c0796a407d445
+
+==Acknowledgements==
+
+Thanks to Suhas Daftuar for suggestions and feedback.
+
+==Copyright==
+
+This document is placed in the public domain.
