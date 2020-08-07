@@ -1,0 +1,82 @@
+<pre>
+  BIP: ???
+  Layer: Peer Services
+  Title: Feature negotiation
+  Author: Suhas Daftuar <sdaftuar@chaincode.com>
+  Comments-Summary: No comments yet.
+  Comments-URI:
+  Status: Draft
+  Type: Standards Track
+  Created: 2020-08-07
+  License: BSD-2-Clause
+</pre>
+
+==Abstract==
+
+This BIP describes a change to the peer-to-peer protocol to allow feature
+negotiation at the time peer connections are established.
+
+==Motivation==
+
+Historically, new peer-to-peer protocol changes have been tied to bumping the
+protocol version, so that peers know to only attempt feature negotiation with
+other peers that may have been upgraded to support the feature. Coordinating
+the protocol version across implementations, when different clients may have
+different priorities for features to implement, is an unnecessary burden in the
+upgrade process for p2p features that do not require universal support.
+
+Many earlier p2p protocol upgrades occurred with new messages sent after a peer
+connection is setup (with receipt of a verack by both sides), via the use of
+new p2p messages. See BIP 130 (sendheaders), BIP 133 (feefilter), and BIP 152
+(compact blocks) for some recent examples. Sending new messages on the network
+raises the question of what non-implementing software will do with such
+messages: if the response might be to disconnect, then the network might
+partition in the future as incompatible software is deployed. 
+
+The common behavior observed on the network was for software to ignore unknown
+messages received from a peer after a verack message has been received, so
+these proposals posed small risk to potential network partitioning, as the new
+messages introduced are all sent after the verack.
+
+However, for some p2p upgrades, it is helpful to establish feature negotiation
+prior to a connection being fully established (ie, prior to the verack being
+received by both sides). BIP 339 (wtxid-relay) is one such feature, which
+allows for sending and receiving a single new message, wtxidrelay, in between
+version and verack.
+
+As clients on the network have historically disallowed messages between version
+and verack, BIP 339 requires that peers bump the protocol version in order to
+even attempt feature negotiation, with the expectation that software which does
+not implement BIP 339 will ignore these messages.
+
+In this BIP, we propose a codifying this mechanism for future p2p upgrades, by
+requiring that implementing software ignore unknown messages before a verack.
+This allows future upgrades to follow the pattern of BIP 339 and negotiate new
+features by exchanging messages prior to exchanging verack messages, without
+concerns of being unnecessarily disconnected by a peer which doesn't understand
+the messages.
+
+==Specification==
+
+# Nodes implementing this BIP MUST ignore unknown messages received prior to a verack from another peer.
+
+==Considerations==
+
+If peers bump their protocol version past 70016 (the BIP 339 protocol version)
+but do not implement this BIP, nodes that do implement features based on this
+BIP in the future may be disconnected from nodes that do not, creating a
+network partitioning risk. The implication of deployment of BIP 339 on the
+network is that non-BIP-339-implementing software should effectively adopt the
+specification described here.
+
+==Backward compatibility==
+
+Existing software clients are unaffected by this change.
+
+==Implementation==
+
+TODO
+
+==Copyright==
+
+This BIP is licensed under the 2-clause BSD license.
