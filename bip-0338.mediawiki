@@ -61,11 +61,12 @@ in the number of block-relay-only connections that can be made on the network.
 
 ==Specification==
 
-# A new disabletx message is added, which is defined as an empty message with message type set to "disabletx".
+# A new disabletx message is added, which is defined as a message containing a 1-byte integer, with message type set to "disabletx". The integer SHALL be interpreted as a boolean (and MUST have a value of either 1 or 0).
 # The protocol version of nodes implementing this BIP must be set to 70017 or higher.
-# If a node sets the transaction relay field in the version message to a peer to false, then the disabletx message MAY also be sent in response to a version message from that peer if the peer's protocol version is >= 70017. If sent, the disabletx message MUST be sent prior to sending a verack.
-# A node MUST NOT send the disabletx message if the transaction relay field in the version message is omitted or set to true.
-# A node that has sent or received a disabletx message to/from a peer MUST NOT send any of these messages to the peer:
+# Software implementing this BIP MUST send the disabletx message (with integer set to 0 or 1) to another peer advertising version 70017 or higher. The message MUST be sent prior to sending a verack.
+# A disabletx message MUST NOT be sent more than once.
+# If a node sets the transaction relay field in the version message to a peer to false, then the disabletx message sent by software implementing this BIP MAY include an integer value of 1 (true). Otherwise, the integer in a disabletx message MUST be set to 0.
+# If a disabletx message with integer set to 1 is sent by either peer in a connection, and if both peers have sent a disabletx message to the other (indicating implementation of this BIP), then the following messages MUST NOT be sent by either peer:
 ## inv messages for transactions
 ## notfound messages for transactions
 ## getdata messages for transactions
@@ -74,11 +75,11 @@ in the number of block-relay-only connections that can be made on the network.
 ## feefilter (BIP 133)
 ## mempool (BIP 35)
 ## tx message
-# It is RECOMMENDED that a node that has sent or received a disabletx message to/from a peer not send any of these messages to the peer:
+# It is RECOMMENDED that a node that has sent (or received) a disabletx message with integer 1 not send any of these messages to the corresponding peer:
 ## addr/getaddr
 ## addrv2 (BIP 155)
 # The behavior regarding sending or processing other message types is not specified by this BIP.
-# Nodes MAY decide to not remain connected to peers that send this message (for example, if trying to find a peer that will relay transactions).
+# Nodes MAY decide to not remain connected to peers that send a disabletx message with integer set to 1 (for example, if trying to find a peer that will relay transactions).
 
 ==Compatibility==
 
